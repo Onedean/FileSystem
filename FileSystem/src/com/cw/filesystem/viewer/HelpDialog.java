@@ -1,7 +1,17 @@
 package com.cw.filesystem.viewer;
 
-import javax.swing.*;
-import java.awt.*;
+import java.awt.Component;
+
+import java.awt.Dimension;
+import java.awt.FlowLayout;
+
+import javax.swing.JButton;
+import javax.swing.JDialog;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JRadioButton;
+
+import com.cw.filesystem.model.FAT;
 
 public class HelpDialog extends JDialog {
     private JDialog jdHD;

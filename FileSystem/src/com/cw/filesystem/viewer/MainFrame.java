@@ -1,33 +1,62 @@
 package com.cw.filesystem.viewer;
 
-import com.cw.filesystem.model.Disk;
-import com.cw.filesystem.model.FAT;
-import com.cw.filesystem.model.File;
-import com.cw.filesystem.model.Folder;
-import com.cw.filesystem.servicw.FATService;
-import com.cw.filesystem.util.FileSystemUtil;
-import com.cw.filesystem.util.MessageUtil;
+import java.awt.BorderLayout;
 
-import javax.swing.*;
-import javax.swing.event.TreeSelectionEvent;
-import javax.swing.event.TreeSelectionListener;
-import javax.swing.table.TableModel;
-import javax.swing.tree.DefaultMutableTreeNode;
-import javax.swing.tree.TreePath;
-import java.awt.*;
-import java.awt.event.*;
+import java.awt.Color;
+import java.awt.Dimension;
+import java.awt.FlowLayout;
+import java.awt.Frame;
+import java.awt.Image;
+import java.awt.MenuItem;
+import java.awt.PopupMenu;
+import java.awt.Toolkit;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.InputEvent;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public class MainFrame extends Frame implements KeyListener, TreeSelectionListener {
+import javax.swing.ImageIcon;
+import javax.swing.JButton;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JList;
+import javax.swing.JMenu;
+import javax.swing.JMenuBar;
+import javax.swing.JMenuItem;
+import javax.swing.JPanel;
+import javax.swing.JPopupMenu;
+import javax.swing.JScrollPane;
+import javax.swing.JSplitPane;
+import javax.swing.JTable;
+import javax.swing.JTextField;
+import javax.swing.JTree;
+import javax.swing.border.Border;
+import javax.swing.table.TableModel;
+import javax.swing.tree.DefaultMutableTreeNode;
+import javax.swing.tree.TreeNode;
+import javax.swing.tree.TreePath;
+
+import com.cw.filesystem.model.Disk;
+import com.cw.filesystem.model.FAT;
+import com.cw.filesystem.model.File;
+import com.cw.filesystem.model.Folder;
+import com.cw.filesystem.service.FATService;
+import com.cw.filesystem.util.FileSystemUtil;
+import com.cw.filesystem.util.MessageUtil;
+public class MainFrame extends Frame{
     //创建面板，文本栏等
     private JPanel jp1,jp2,jp3,jp4,jp5;
     private JTextField jtf;
-    private JTree tree;
-    private JTextArea showText;
+    private Tree jtr;
     private JTable jta1,jta2;
     private JScrollPane jsp1,jsp2;
     private JMenuBar jmb;
@@ -35,29 +64,30 @@ public class MainFrame extends Frame implements KeyListener, TreeSelectionListen
     private JMenuItem jmi;
     private JLabel jl1,jl2,jl3;
     private JButton jb;
-    private TableModel tm;
+    private DiskTableModel tm;
+    private OpenFileTableModel oftm;
     //存放树状展示的路径和结点
     private Map<String, DefaultMutableTreeNode> map;
-    private FATService fatService;
-    //需要用的从其他包中导入的类创建的对象
-    private OpenFileTableModel oftm;
     private List<FAT> fatList;
+    private FATService fatService;
     private boolean isFile;
     private int n;
     private int fatIndex = 0;
 
     //构造函数，实现窗口
     public MainFrame(){
-        //容器组件初始化
-        initComponent();
+        //创建存放路径和结点的树
+        map = new HashMap<String, DefaultMutableTreeNode>();
+        //创建存储文件分配表的动态数组
+        fatList = new ArrayList<FAT>();
         //初始化后台数据
         initService();
         //初始化窗口
         initMainFrameUI();
+        //容器组件初始化
+        initComponent();
         //添加介绍菜单
         addJieShao();
-        //初始化树组件即列表索引
-        initTreeList();
         //布局各个面板组件
         addJPanel();
     }
@@ -75,6 +105,7 @@ public class MainFrame extends Frame implements KeyListener, TreeSelectionListen
         jp4 = new JPanel();
         jp5 = new JPanel();
         jtf = new JTextField();
+        jtr = new Tree();
         jl1 = new JLabel("路径：");
         jl2 = new JLabel("磁盘分析");
         jl3 = new JLabel("已打开文件");
@@ -82,16 +113,12 @@ public class MainFrame extends Frame implements KeyListener, TreeSelectionListen
         jm = new JMenu("系统");
         jmi = new JMenuItem("介绍");
         jb = new JButton("帮助");
-        tm = new com.cw.filesystem.viewer.TableModel();
+        tm = new DiskTableModel();
         oftm = new OpenFileTableModel();
         jta1 = new JTable(tm);
         jta2 = new JTable(oftm);
         jsp1 = new JScrollPane(jta1);
         jsp2 = new JScrollPane(jta2);
-        //创建存放路径和结点的树
-        map = new HashMap<String,DefaultMutableTreeNode>();
-        //创建存储文件分配表的动态数组
-        fatList = new ArrayList<FAT>();
         validate();
     }
     //窗口的实现
@@ -100,12 +127,12 @@ public class MainFrame extends Frame implements KeyListener, TreeSelectionListen
         Toolkit t = Toolkit.getDefaultToolkit();
         //设置布局
         this.setLayout(new BorderLayout());
-        //设置窗体位置屏幕正中间大小800*600
-        this.setBounds(((int)t.getScreenSize().getWidth()-800)/2,((int)t.getScreenSize().getHeight()-600)/2,800,600);
+        //设置窗体位置屏幕正中间大小1000*600
+        this.setBounds(((int)t.getScreenSize().getWidth()-1000)/2,((int)t.getScreenSize().getHeight()-600)/2,1000,600);
         //设置标题
         this.setTitle("模拟磁盘文件系统");
         //设置窗体图标
-        URL url=this.getClass().getClassLoader().getResource("images/myComputer.png");
+        URL url=this.getClass().getClassLoader().getResource("images/img1.jpg");
         Image image=t.getImage(url);
         this.setIconImage(image);
         //设置窗口关闭
@@ -118,6 +145,35 @@ public class MainFrame extends Frame implements KeyListener, TreeSelectionListen
         this.setResizable(false);
         //设置窗口可见
         this.setVisible(true);
+    }
+    private void addJPanel(){
+        //路径帮助面板设置
+        jp2.setLayout(new FlowLayout(FlowLayout.LEFT));
+        jp2.setPreferredSize(new Dimension(1000, 30));
+        jtf.setPreferredSize(new Dimension(450,20));
+        jtf.setText("C:");
+        jp2.add(jl1);
+        jp2.add(jtf);
+        jp2.add(jb);
+        jbAddListener();
+        //分析面板设置
+        //jp4.setPreferredSize(new Dimension(300, 500));
+        jsp1.setPreferredSize(new Dimension(310,355));
+        jsp2.setPreferredSize(new Dimension(310,100));
+        jp4.add(jl2);
+        jp4.add(jsp1);
+        jp4.add(jl3,BorderLayout.CENTER);
+        jp4.add(jsp2);
+        jp4.setPreferredSize(new Dimension(360,500));
+        //validate();
+        //总体面板设置
+        jp1.setLayout(new BorderLayout());
+        jp1.add(jp2, BorderLayout.NORTH);
+        jp1.add(jtr, BorderLayout.WEST);
+        jp1.add(jp4, BorderLayout.EAST);
+        //设置整体下方布局
+        this.add(jp1,BorderLayout.CENTER);
+        validate();
     }
     //添加介绍菜单
     private void addJieShao(){
@@ -135,6 +191,7 @@ public class MainFrame extends Frame implements KeyListener, TreeSelectionListen
                 new JieShao(jp1);
             }
         });
+
     }
     //添加帮助按钮监听器打开帮助面板
     private void jbAddListener(){
@@ -157,180 +214,122 @@ public class MainFrame extends Frame implements KeyListener, TreeSelectionListen
             }
         });
     }
-    private void addJPanel(){
-        //路径帮助面板设置
-        jp2.setLayout(new FlowLayout(FlowLayout.LEFT));
-        jp2.setPreferredSize(new Dimension(1000, 40));
-        jtf.setPreferredSize(new Dimension(300,30));
-        jtf.setText("C:");
-        jp2.add(jl1);
-        jp2.add(jtf);
-        jp2.add(jb);
-        jbAddListener();
-        //分析面板设置
-        //jp4.setPreferredSize(new Dimension(300, 500));
-        jsp1.setPreferredSize(new Dimension(200,400));
-        jsp2.setPreferredSize(new Dimension(200,400));
-        jp4.add(jl2);
-        jp4.add(jsp1);
-        jp4.add(jl3);
-        jp4.add(jsp2);
-        validate();
-        //总体面板设置
-        jp1.setLayout(new BorderLayout());
-        jp1.add(jp2, BorderLayout.NORTH);
-        jp1.add(jp3, BorderLayout.WEST);
-        jp1.add(jp4, BorderLayout.EAST);
-        //设置整体下方布局
-        this.add(jp1,BorderLayout.CENTER);
-        validate();
-    }
-    //创建一个实现磁盘文件夹及文件树的内部类(每个内部类都能独立地继承一个(接口的)实现，所以无论外围类是否已经继承了某个(接口的)实现，对于内部类都没有影响)
-    public class tree extends JPanel{
-        //Java对象转换为字节序列即对象的序列化即对象存档
+
+    /*
+     * 树
+     */
+    public class Tree extends JPanel {
+
         private static final long serialVersionUID = 2352829445429133249L;
         private JTree tree;
-        private JScrollPane jsp1,jsp2;
+        private JScrollPane jsp1, jsp2;
         private JSplitPane jsp;
         private JPanel jp1;
         private MyJLabel[] jLabel;
-        //创建点击操作面板pm1和点击文件/文件夹pm2右键菜单
-        private JPopupMenu pm1,pm2;
-        //创建右键菜单项
-        private JMenuItem jmi1,jmi2,jmi3,jmi4,jmi5,jmi6;
+        private JPopupMenu pm, pm2;
+        private JMenuItem mi1, mi2, mi3, mi4, mi5, mi6;
         private DefaultMutableTreeNode node1;
-        //内部类树的构造方法??????????????????????????????????????????????
-        public tree(){
-             this.initMenuItem();
-             this.initMenuItemByJLabel();
-             this.menuItemAddListener();
-             //初始化树
-             this.initTree();
-             //为树增减事件监听器
-             this.treeAddListener();
-             //为面板增加事件监听器
-             this.jpanelAddListener();
 
-             //设置操作面板属性
-             jp1.setLayout(new FlowLayout(FlowLayout.LEFT));
-             jp1.setBackground(Color.white);
-             jp1.add(pm1);
+        public Tree() {
 
-             //为操作面板设置水平滚动条总是隐藏和竖直滚动条总是出现
-             jsp2 = new JScrollPane(jp1);
-             jsp2.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
-             jsp2.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
-            //为操作面板设置最佳大小,背景白色
-             jsp2.setPreferredSize(new Dimension(482,515));
-             jsp2.setBackground(Color.white);
-             //为操作面板创建一个视口jp1（如果有必要）并设置其视图
-             jsp2.setViewportView(jp1);
+            this.initMenuItem();
+            this.initMenuItenByJLabel();
+            this.menuItemAddListener();
 
-             //创建水平拆分窗格，分为一个存放树和一个操作面板的滚动窗格
-             jsp = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT,jsp1,jsp2);
-             //设置分隔条的大小
-             jsp.setDividerSize(0);
-             //设置分隔条的位置，相对于左边的像素长度
-             jsp.setDividerLocation(200);
-             //禁止分隔条可以拖动
-             jsp.setEnabled(false);
-             this.add(jsp);
+            this.initTree();
+            this.treeAddListener();
+            this.jPanelAddListener();
+
+            jp1.setLayout(new FlowLayout(FlowLayout.LEFT));
+            jp1.setBackground(Color.white);
+            jp1.add(pm);
+
+            jsp2 = new JScrollPane(jp1);
+            jsp2.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+            jsp2.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
+            jsp2.setPreferredSize(new Dimension(442, 515));
+            jsp2.setBackground(Color.white);
+            jsp2.setViewportView(jp1);
+
+            jsp1.setPreferredSize(new Dimension(200, 515));
+
+            jsp = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT,jsp1,jsp2);
+
+            jsp.setDividerSize(0);
+            jsp.setDividerLocation(200);
+            jsp.setEnabled(false);
+
+            this.add(jsp);
         }
-        //初始化树
-        private void initTree(){
-            //创建树的根"C盘"
+
+        /**
+         * 初始化树
+         */
+        private void initTree() {
             node1 = new DefaultMutableTreeNode(new Disk("C"));
-            map.put("C",node1);
-            //创建操作面板组件
+            map.put("C:", node1);
             jp1 = new JPanel();
-            //创建用node1做根的树组件对象
             tree = new JTree(node1);
-            //添加可滚动的树的窗格
             jsp1 = new JScrollPane(tree);
-            jsp1.setPreferredSize(new Dimension(200,515));
         }
 
-        //增加监听树的事件监听器
         private void treeAddListener(){
             tree.addMouseListener(new MouseListener() {
-                @Override
-                public void mouseClicked(MouseEvent e) {
-                    //点击树的结点,则相应改变路径栏对应地址,及对应所属操作面板
-                    TreePath path = tree.getSelectionPath();
-                    if(path != null){
-                        //更新路径栏
-                        String pathStr = path.toString().replace("[","").replace("]","").replace(",","\\").replace(" ","").replace("C","C:");
-                        jtf.setText(pathStr);
-                        //更新操作面板
-                        jp1.removeAll();
-                        addJLabel(fatService.getFATs(pathStr),pathStr);
-                        jp1.updateUI();
-                    }
-                }
-                @Override
-                public void mousePressed(MouseEvent e) {
-                }
+
                 @Override
                 public void mouseReleased(MouseEvent e) {
                 }
+
                 @Override
-                public void mouseEntered(MouseEvent e) {
+                public void mousePressed(MouseEvent e) {
                 }
+
                 @Override
                 public void mouseExited(MouseEvent e) {
                 }
+
+                @Override
+                public void mouseEntered(MouseEvent e) {
+                }
+
+                @Override
+                public void mouseClicked(MouseEvent e) {
+                    //改变地址栏路径
+                    TreePath path = tree.getSelectionPath();
+                    if (path != null){
+                        String pathStr = path.toString().replace("[", "").replace("]", "").replace(",", "\\").replace(" ", "").replaceFirst("C", "C:");
+                        jtf.setText(pathStr);
+
+                        //更新jp1
+                        jp1.removeAll();
+                        addJLabel(fatService.getFATs(pathStr), pathStr);
+                        jp1.updateUI();
+                    }
+                }
             });
         }
-        //在面板中添加文件夹/文件
-        private void addJLabel(List<FAT> fats,String path){
+
+        /**
+         * 在面板中添加JLabel
+         */
+        private void addJLabel(List<FAT> fats, String path){
             fatList = fats;
             isFile = true;
             n = fats.size();
             jp1.setPreferredSize(new Dimension(482, FileSystemUtil.getHeight(n)));
             jLabel = new MyJLabel[n];
-            for(int i=0;i<n;i++){
-                if(fats.get(i).getIndex() == FileSystemUtil.END){
-                    if(fats.get(i).getType() == FileSystemUtil.FOLDER){
+            for (int i=0; i<n; i++){
+                if (fats.get(i).getIndex() == FileSystemUtil.END){
+                    if (fats.get(i).getType() == FileSystemUtil.FOLDER){
                         isFile = false;
-                        jLabel[i] = new MyJLabel(isFile,((Folder)fats.get(i).getObject()).getFolderName());
-                    }else{
+                        jLabel[i] = new MyJLabel(isFile, ((Folder)fats.get(i).getObject()).getFolderName());
+                    } else {
                         isFile = true;
-                        jLabel[i] = new MyJLabel(isFile,((File)fats.get(i).getObject()).getFileName());
+                        jLabel[i] = new MyJLabel(isFile, ((File)fats.get(i).getObject()).getFileName());
                     }
                     jp1.add(jLabel[i]);
                     jLabel[i].add(pm2);
                     jLabel[i].addMouseListener(new MouseListener() {
-                        @Override
-                        public void mouseClicked(MouseEvent e) {
-                            //如果鼠标点击次数为2，意为双击打开文件夹/文件
-                            if(e.getClickCount() == 2){
-                                //判断双击的目标是文件还是文件夹
-                                if(fatList.get(fatIndex).getType() == FileSystemUtil.FILE){
-                                    //如果是文件，判断文件已打开数目是否超过五个
-                                    if(fatService.getOpenFiles().getFiles().size()<FileSystemUtil.num){
-                                        if(fatService.checkOpenFile(fatList.get(fatIndex))){
-                                            //判断该文件是否已打开
-                                            MessageUtil.showErrorMessages(jp1,"文件已打开");
-                                            return;
-                                        }
-                                        //否则打开该文件，更新???????????????????????????
-                                        fatService.addOpenFile(fatList.get(fatIndex),FileSystemUtil.flagWrite);
-                                        oftm.initData();
-                                        jta2.updateUI();
-                                        new OpenFileJFrame(fatList.get(fatIndex),fatService,oftm,jta2,tm,jta1);
-                                    }else{
-                                        MessageUtil.showErrorMessages(jp1,"文件已打开数目超过5个");
-                                    }
-                                }else{
-
-                                }
-                            }
-                        }
-
-                        @Override
-                        public void mousePressed(MouseEvent e) {
-
-                        }
 
                         @Override
                         public void mouseReleased(MouseEvent e) {
@@ -338,104 +337,254 @@ public class MainFrame extends Frame implements KeyListener, TreeSelectionListen
                         }
 
                         @Override
-                        public void mouseEntered(MouseEvent e) {
-
+                        public void mousePressed(MouseEvent e) {
+                            for (int j=0; j<n; j++){
+                                if (e.getSource() == jLabel[j] && ((e.getModifiers() & InputEvent.BUTTON3_MASK)!=0)){
+                                    pm2.show(jLabel[j], e.getX(), e.getY());
+                                }
+                            }
                         }
 
                         @Override
                         public void mouseExited(MouseEvent e) {
+                            for (int j=0; j<n; j++){
+                                if (e.getSource() == jLabel[j]){
+                                    fatIndex = j;
+                                    if (jLabel[j].type){
+                                        jLabel[j].setIcon(new ImageIcon(getClass().getResource(FileSystemUtil.filePath)));
+                                    } else {
+                                        jLabel[j].setIcon(new ImageIcon(getClass().getResource(FileSystemUtil.folderPath)));
+                                    }
+                                }
+                            }
+                        }
 
+                        @Override
+                        public void mouseEntered(MouseEvent e) {
+                            for (int j=0; j<n; j++){
+                                if (e.getSource() == jLabel[j]){
+                                    fatIndex = j;
+                                    if (jLabel[j].type){
+                                        jLabel[j].setIcon(new ImageIcon(getClass().getResource(FileSystemUtil.file1Path)));
+                                    } else {
+                                        jLabel[j].setIcon(new ImageIcon(getClass().getResource(FileSystemUtil.folder1Path)));
+                                    }
+                                }
+                            }
+                        }
+
+                        @Override
+                        public void mouseClicked(MouseEvent e) {
+                            if (e.getClickCount() == 2){
+                                if (fatList.get(fatIndex).getType() == FileSystemUtil.FILE){
+                                    //文件
+                                    if (fatService.getOpenFiles().getFiles().size() < FileSystemUtil.num){
+                                        if (fatService.checkOpenFile(fatList.get(fatIndex))){
+                                            MessageUtil.showErrorMgs(jp1, "文件已打开");
+                                            return;
+                                        }
+                                        fatService.addOpenFile(fatList.get(fatIndex), FileSystemUtil.flagWrite);
+                                        oftm.initData();
+                                        jta2.updateUI();
+                                        new OpenFileJFrame(fatList.get(fatIndex), fatService, oftm, jta2, tm, jta1);
+                                    } else {
+                                        MessageUtil.showErrorMgs(jp1, "已经打开5个文件了，达到上限");
+                                    }
+
+                                } else {
+                                    //文件夹
+                                    Folder folder = (Folder)fatList.get(fatIndex).getObject();
+                                    String path = folder.getLocation() + "\\" + folder.getFolderName();
+
+                                    jp1.removeAll();
+                                    addJLabel(fatService.getFATs(path), path);
+                                    jp1.updateUI();
+                                    jtf.setText(path);
+                                }
+                            }
                         }
                     });
                 }
             }
         }
-        //在面板中增加监听器
-        private void jpanelAddListener(){
+
+        /**
+         * 面板中添加监听器
+         */
+        private void jPanelAddListener() {
+            //点击右键时的事件
             jp1.addMouseListener(new MouseListener() {
-                @Override
-                public void mouseClicked(MouseEvent e) {
-                    //TODO
-                }
-                @Override
-                public void mousePressed(MouseEvent e) {
-                }
+
                 @Override
                 public void mouseReleased(MouseEvent e) {
                 }
+
                 @Override
-                public void mouseEntered(MouseEvent e) {
+                public void mousePressed(MouseEvent e) {
+                    int mods = e.getModifiers();
+                    if ((mods&InputEvent.BUTTON3_MASK) != 0){
+                        pm.show(jp1, e.getX(), e.getY());
+                    }
                 }
+
                 @Override
                 public void mouseExited(MouseEvent e) {
+
+                }
+
+                @Override
+                public void mouseEntered(MouseEvent e) {
+
+                }
+
+                @Override
+                public void mouseClicked(MouseEvent e) {
+
                 }
             });
         }
+
         //初始化右键菜单
         public void initMenuItem(){
-
+            pm = new JPopupMenu();
+            mi1 = new JMenuItem("新建文件");
+            mi2 = new JMenuItem("新建文件夹");
+            pm.add(mi1);
+            pm.add(mi2);
         }
-        //初始化右键菜单项
-        public void initMenuItemByJLabel(){
 
+        public void initMenuItenByJLabel(){
+            pm2 = new JPopupMenu();
+            mi3 = new JMenuItem("打开");
+            mi4 = new JMenuItem("重命名");
+            mi5 = new JMenuItem("删除");
+            mi6 = new JMenuItem("属性");
+            pm2.add(mi3);
+            pm2.add(mi4);
+            pm2.add(mi5);
+            pm2.add(mi6);
         }
-        //点击右键选项增加监听器
+
+        /**
+         * 点击右键选项添加监听器
+         */
         public void menuItemAddListener(){
+            mi1.addActionListener(new ActionListener() {
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    int index = fatService.createFile(jtf.getText());
+                    if (index == FileSystemUtil.ERROR){
+                        MessageUtil.showErrorMgs(jp1, "磁盘已满，无法创建文件");
+                    } else {
+                        //树的目录展示只需要文件夹
+//						FAT fat = fatService.getFAT(index);
+//						DefaultMutableTreeNode node = new DefaultMutableTreeNode((File)(fat.getObject()));
+//						map.put(jtf1.getText() + "\\" + ((File)(fat.getObject())).getFileName(), node);
+//						DefaultMutableTreeNode nodeParent = map.get(jtf1.getText());
+//						nodeParent.add(node);
+                        tree.updateUI();
+                        ((DiskTableModel)tm).initData();
+                        jta1.updateUI();
 
+                        jp1.removeAll();
+                        addJLabel(fatService.getFATs(jtf.getText()), jtf.getText());
+                        jp1.updateUI();
+                    }
+                }
+            });
+            mi2.addActionListener(new ActionListener() {
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    int index = fatService.createFolder(jtf.getText());
+                    if (index == FileSystemUtil.ERROR){
+                        MessageUtil.showErrorMgs(jp1, "磁盘已满，无法创建文件夹");
+                    } else {
+                        FAT fat = fatService.getFAT(index);
+                        DefaultMutableTreeNode node = new DefaultMutableTreeNode((Folder)(fat.getObject()));
+                        map.put(jtf.getText() + "\\" + ((Folder)(fat.getObject())).getFolderName(), node);
+                        DefaultMutableTreeNode nodeParent = map.get(jtf.getText());
+                        nodeParent.add(node);
+                        tree.updateUI();
+                        ((DiskTableModel)tm).initData();
+                        jta1.updateUI();
+
+                        jp1.removeAll();
+                        addJLabel(fatService.getFATs(jtf.getText()), jtf.getText());
+                        jp1.updateUI();
+                    }
+                }
+
+            });
+            mi3.addActionListener(new ActionListener() {
+                //打开
+                @Override
+                public void actionPerformed(ActionEvent e){
+                    if (fatList.get(fatIndex).getType() == FileSystemUtil.FILE){
+                        //文件
+                        if (fatService.getOpenFiles().getFiles().size() < FileSystemUtil.num){
+                            if (fatService.checkOpenFile(fatList.get(fatIndex))){
+                                MessageUtil.showErrorMgs(jp1, "文件已打开");
+                                return;
+                            }
+                            fatService.addOpenFile(fatList.get(fatIndex), FileSystemUtil.flagWrite);
+                            oftm.initData();
+                            jta2.updateUI();
+                            new OpenFileJFrame(fatList.get(fatIndex), fatService, oftm, jta2, tm, jta1);
+                        } else {
+                            MessageUtil.showErrorMgs(jp1, "已经打开5个文件了，达到上限");
+                        }
+
+                    } else {
+                        //文件夹
+                        Folder folder = (Folder)fatList.get(fatIndex).getObject();
+                        String path = folder.getLocation() + "\\" + folder.getFolderName();
+
+                        jp1.removeAll();
+                        addJLabel(fatService.getFATs(path), path);
+                        jp1.updateUI();
+                        jtf.setText(path);
+                    }
+                }
+            });
+            mi4.addActionListener(new ActionListener() {
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    new ShowRenameDialog(jp1, fatList.get(fatIndex), map, fatService);
+                    tree.updateUI();
+                    tm.initData();
+                    jta1.updateUI();
+
+                    jp1.removeAll();
+                    addJLabel(fatService.getFATs(jtf.getText()), jtf.getText());
+                    jp1.updateUI();
+                }
+            });
+            mi5.addActionListener(new ActionListener() {
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    int i = MessageUtil.showConfirmMgs(jp1, "是否确定要删除该文件？");
+                    if (i==0){
+                        fatService.delete(jp1, fatList.get(fatIndex), map);
+
+                        tree.updateUI();
+                        ((DiskTableModel)tm).initData();
+                        jta1.updateUI();
+
+                        jp1.removeAll();
+                        addJLabel(fatService.getFATs(jtf.getText()), jtf.getText());
+                        jp1.updateUI();
+                    }
+
+                }
+            });
+            mi6.addActionListener(new ActionListener() {
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    new ShowPropertyDialog(jp1, fatList.get(fatIndex));
+                }
+            });
         }
-    }
-    //树组件索引的实现
-    private void initTreeList(){
-        DefaultMutableTreeNode root = new DefaultMutableTreeNode("C盘");
-        DefaultMutableTreeNode nodeTV = new DefaultMutableTreeNode("文件夹类");
-        DefaultMutableTreeNode nodePhone = new DefaultMutableTreeNode("可执行程序类");
-        DefaultMutableTreeNode tv1 = new DefaultMutableTreeNode(new Goods("A文本",5699));
-        DefaultMutableTreeNode tv2 = new DefaultMutableTreeNode(new Goods("B文本",7800));
-        DefaultMutableTreeNode phone1 = new DefaultMutableTreeNode(new Goods("A可执行程序",3600));
-        DefaultMutableTreeNode phone2 = new DefaultMutableTreeNode(new Goods("B可执行程序",2500));
-        root.add(nodeTV);
-        root.add(nodePhone);
-        nodeTV.add(tv1);
-        nodeTV.add(tv2);
-        nodePhone.add(phone2);
-        nodePhone.add(phone1);
-        //创建用root做根的树组件对象
-        tree = new JTree(root);
-        //窗口监视树组件上的事件
-        tree.addTreeSelectionListener(this);
-        showText = new JTextArea();
-        jp3.setLayout(new GridLayout(1,2));
-        jp3.add(new JScrollPane(tree));
-        jp3.add(new JScrollPane(showText));
-        //使容器再次布置其子组件
-        validate();
-    }
 
-    @Override
-    public void keyTyped(KeyEvent e) {
 
-    }
-
-    @Override
-    public void keyPressed(KeyEvent e) {
-
-    }
-
-    @Override
-    public void keyReleased(KeyEvent e) {
-
-    }
-
-    @Override
-    //鼠标单击树上结点的监视器实现接口的方法
-    public void valueChanged(TreeSelectionEvent e) {
-        //获得鼠标单击的那个结点
-        DefaultMutableTreeNode node = (DefaultMutableTreeNode)tree.getLastSelectedPathComponent();
-        //判断是不是叶子结点
-        if(node.isLeaf()){
-            //返回Object类型点击的结点转换为Goods类对象
-            Goods s = (Goods)node.getUserObject();
-            showText.append(s.name+","+s.price+"容量\n");
-        }
     }
 }

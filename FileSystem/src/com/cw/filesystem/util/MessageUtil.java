@@ -1,11 +1,20 @@
 package com.cw.filesystem.util;
 
-import javax.swing.*;
-import java.awt.*;
+import java.awt.Component;
+
+import javax.swing.JOptionPane;
 
 public class MessageUtil {
-    //弹出"文件正在打开着，不能删除"的提示错误窗口
-    public static void showErrorMessages(Component parent,String message){
-        JOptionPane.showMessageDialog(parent,message,"错误",JOptionPane.ERROR_MESSAGE);
+
+    public static void showMgs(Component parent, String message){
+        JOptionPane.showMessageDialog(parent, message, "错误", JOptionPane.ERROR_MESSAGE);
+    }
+
+    public static void showErrorMgs(Component parent, String message){
+        JOptionPane.showMessageDialog(parent, message, "错误", JOptionPane.ERROR_MESSAGE);
+    }
+
+    public static int showConfirmMgs(Component parent, String message){
+        return JOptionPane.showConfirmDialog(parent, message, "确认", JOptionPane.YES_NO_OPTION);
     }
 }

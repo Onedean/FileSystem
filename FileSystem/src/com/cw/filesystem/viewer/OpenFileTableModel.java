@@ -1,32 +1,47 @@
 package com.cw.filesystem.viewer;
 
-import javax.swing.table.AbstractTableModel;
 import java.util.Vector;
+
+import javax.swing.table.AbstractTableModel;
+
+import com.cw.filesystem.model.OpenFiles;
+import com.cw.filesystem.service.FATService;
+import com.cw.filesystem.util.FileSystemUtil;
 
 public class OpenFileTableModel extends AbstractTableModel {
     private Vector<String> OpenFileTableTitle;
-    private Vector OpenFileTableData;
+    private Vector<Vector<String>> OpenFileTableData;
+    private FATService fatService;
     public OpenFileTableModel(){
-        OpenFileTableTitle = new Vector<String>();
-        OpenFileTableData = new Vector();
-        OpenFileTableTitle.add("文件名称");
-        OpenFileTableTitle.add("文件打开位置");
-        OpenFileTableTitle.add("文件起始盘");
-        OpenFileTableTitle.add("文件路径");
-        String b[][] = new String[50][4];
-        for(int i=0;i<50;i++) {
-            for (int j = 0; j < 4; j++) {
-                b[i][j] = "";
-            }
-            OpenFileTableData.add(b[i]);
-        }
+        fatService = new FATService();
+        initData();
     }
+    public void initData(){
+        OpenFileTableTitle = new Vector<String>();
+        OpenFileTableTitle.add("文件名称");
+        OpenFileTableTitle.add("文件打开方式");
+        OpenFileTableTitle.add("文件起始盘块号");
+        OpenFileTableTitle.add("文件路径");
 
-    @Override
-    public void setValueAt(Object aValue, int rowIndex, int columnIndex) {
-        //单据格数据发生改变的时候调用该函数重设单元格的数据
-        ((String[])this.OpenFileTableData.get(rowIndex))[columnIndex]=(String)aValue;
-        super.setValueAt(aValue, rowIndex, columnIndex);
+        Vector<String> vc = null;
+        OpenFileTableData = new Vector<Vector<String>>();
+        OpenFiles openFiles = fatService.getOpenFiles();
+
+        for(int i = 0; i< FileSystemUtil.num; i++) {
+            vc = new Vector<String>();
+            if(i<openFiles.getFiles().size()){
+                vc.add(openFiles.getFiles().get(i).getFile().getFileName());
+                vc.add(openFiles.getFiles().get(i).getFlag()==FileSystemUtil.flagRead ? "只读" : "写读");
+                vc.add(openFiles.getFiles().get(i).getFile().getDiskNum()+"");
+                vc.add(openFiles.getFiles().get(i).getFile().getLocation());
+            }else {
+                vc.add("");
+                vc.add("");
+                vc.add("");
+                vc.add("");
+            }
+            OpenFileTableData.add(vc);
+        }
     }
 
     @Override
@@ -40,9 +55,12 @@ public class OpenFileTableModel extends AbstractTableModel {
     }
 
     @Override
-    public Object getValueAt(int rowIndex, int columnIndex) {
-        String[] LineTemp2 = (String[])this.OpenFileTableData.get(rowIndex);
-        return LineTemp2[columnIndex];
+    public String getColumnName(int column) {
+        return OpenFileTableTitle.get(column);
     }
-
+    @Override
+    public Object getValueAt(int rowIndex, int columnIndex) {
+        //根据坐标直接返回对应的获取数据
+        return OpenFileTableData.get(rowIndex).get(columnIndex);
+    }
 }

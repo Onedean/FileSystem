@@ -8,7 +8,7 @@ public class File {
     private String fileName;      //文件名，3个字节
     private String type;          //文件类型，2个字节
     private String property;      //文件属性，1个字节
-    private int diskNum;          //文件起始盘符号，1个字节
+    private int diskNum;          //文件起始盘块号，1个字节
     private int length;           //文件长度，1个字节
     private String content;       //文件内容
 
@@ -16,33 +16,34 @@ public class File {
     private Folder parent;        //所属父类文件夹
 
     //文件查看的属性
-    private String location;      //文件路径
+    private String location;      //文件路径\
     private String size;          //文件大小
     private String space;         //文件占用空间
     private Date createTime;      //文件创建时间
 
     private boolean isReadOnly;   //是否只可读
     private boolean isHide;       //是否隐藏
-
-    public File(String fileName){
+    public File(String fileName) {
         super();
         this.fileName = fileName;
     }
 
-    public File(String fileName,String location,int diskNum){
+
+    public File(String fileName, String location, int diskNum) {
         super();
         this.fileName = fileName;
         this.location = location;
-        this.diskNum = diskNum;
-        this.length = 8;
-        this.content = "";
         this.size = "100KB";
         this.space = "100KB";
         this.createTime = new Date();
+        this.diskNum = diskNum;
         this.type = "File";
         this.isReadOnly = false;
         this.isHide = false;
+        this.length = 8;
+        this.content = "";
     }
+
 
     public String getFileName() {
         return fileName;

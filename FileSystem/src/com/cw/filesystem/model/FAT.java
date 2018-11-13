@@ -4,7 +4,7 @@ package com.cw.filesystem.model;
 public class FAT {
     //磁盘块
     private int index;
-    //该磁盘块中存放的是文件还是文件夹类型
+    //该磁盘块中存放的是文件还是文件夹类型（文件夹为1，文件为2）
     private int type;
     //文件还是文件夹
     private Object object;

@@ -2,6 +2,7 @@ package com.cw.filesystem.model;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.zip.DataFormatException;
 
 //文件夹类
 public class Folder {
@@ -13,7 +14,6 @@ public class Folder {
 
     private boolean hasChild;
     private int numOfFAT;
-
     //查看的属性
     private String location;
     private String size;
@@ -40,79 +40,99 @@ public class Folder {
         this.isReadOnly = false;
         this.isHide = false;
     }
-    public String getFolderName(){
+
+    public String getFolderName() {
         return folderName;
     }
-    public void setFolderName(String folderName){
+
+    public void setFolderName(String folderName) {
         this.folderName = folderName;
     }
-    public String getType(){
-        return type;
-    }
-    public void setType(String type){
-        this.type = type;
-    }
-    public String getProperty(){
+
+    public String getProperty() {
         return property;
     }
-    public void setProperty(String property){
+
+    public void setProperty(String property) {
         this.property = property;
     }
-    public int getDiskNum(){
+
+    public int getDiskNum() {
         return diskNum;
     }
-    public void setDiskNum(int diskNum){
+
+    public void setDiskNum(int diskNum) {
         this.diskNum = diskNum;
     }
-    public boolean isHasChild(){
+
+    public boolean isHasChild() {
         return hasChild;
     }
-    public void setHasChild(boolean hasChild){
+
+    public void setHasChild(boolean hasChild) {
         this.hasChild = hasChild;
     }
-    public int getNumOfFAT(){
+
+    public int getNumOfFAT() {
         return numOfFAT;
     }
-    public void setNumOfFAT(int numOfFAT){
+
+    public void setNumOfFAT(int numOfFAT) {
         this.numOfFAT = numOfFAT;
     }
-    public String getLocation(){
+
+    public String getLocation() {
         return location;
     }
-    public void setLocation(String location){
+
+    public void setLocation(String location) {
         this.location = location;
     }
-    public String getSize(){
+
+    public String getSize() {
         return size;
     }
-    public void setSize(String size){
+
+    public void setSize(String size) {
         this.size = size;
     }
-    public String getSpace(){
+
+    public String getSpace() {
         return space;
     }
-    public void setSpace(String space){
+
+    public void setSpace(String space) {
         this.space = space;
     }
-    public String getCreatTime(){
-        //格式化日期
-        SimpleDateFormat riqi = new SimpleDateFormat("yyyy年MM月dd日   HH:MM:SS");
-        //返回的是字符串格式，注意前面方法的类型匹配
-        return riqi.format(createTime);
+
+    public String getCreateTime() {
+        SimpleDateFormat format = new SimpleDateFormat("yyyy年MM月dd日  HH:mm:ss");
+        return format.format(createTime);
     }
-    public void setCreatTime(Date creatTime){
-        this.createTime = creatTime;
+
+    public void setCreateTime(Date createTime) {
+        this.createTime = createTime;
     }
-    public boolean isReadOnly(){
+    public String getType() {
+        return type;
+    }
+
+    public void setType(String type) {
+        this.type = type;
+    }
+    public boolean isReadOnly() {
         return isReadOnly;
     }
-    public void setReadOnly(boolean isReadOnly){
+
+    public void setReadOnly(boolean isReadOnly) {
         this.isReadOnly = isReadOnly;
     }
-    public boolean isHide(){
+
+    public boolean isHide() {
         return isHide;
     }
-    public void setHide(boolean isHide){
+
+    public void setHide(boolean isHide) {
         this.isHide = isHide;
     }
 
